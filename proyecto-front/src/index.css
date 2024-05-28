@@ -1,0 +1,16 @@
+
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap');
+
+
+
+body{
+
+  background: url('./img/background.jpg') no-repeat;
+  background-size: cover;
+  background-position: Start
+  ;
+}
+
+code {
+  font-family: Source-code-pro, Menlo, Monaco, Consolas,'Courier New' ,monospace;
+}
