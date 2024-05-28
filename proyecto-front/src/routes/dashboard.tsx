@@ -1,55 +1,113 @@
-import { useAuth } from "../auth/AuthProvider";
 import React, { useEffect, useState } from "react";
+import { useAuth } from "../auth/AuthProvider";
 import { API_URL } from "../auth/constants";
+import '../estilos/Dashboard.css';
+import DefaultLayout from "../layout/DefaultLayout"
 
-interface Todo {
+interface Transaction {
     id: string;
-    title: string;
-    completed: boolean;
+    type: string;
+    amount: number;
+    description: string;
 }
 
 export default function Dashboard() {
-    const [todos, setTodos] = useState<Todo[]>([]);
-    const [title, setTitle] = useState('');
+    const [transactions, setTransactions] = useState<Transaction[]>([]);
+    const [type, setType] = useState('income');
+    const [amount, setAmount] = useState<number>(0);
+    const [description, setDescription] = useState('');
+    const [editTransactionId, setEditTransactionId] = useState<string | null>(null);
     const auth = useAuth();
 
     useEffect(() => {
-        loadTodos();
+        loadTransactions();
     }, []);
 
-    async function handleSubmit(e: React.FocusEvent<HTMLFormElement>){
+    async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
         e.preventDefault();
-
-        createTodo();
+        if (editTransactionId) {
+            await updateTransaction(editTransactionId);
+        } else {
+            await createTransaction();
+        }
+        await loadTransactions();
+        clearForm();
     }
 
-    async function createTodo(){
+    async function createTransaction() {
         try {
-            const response = await fetch(`${API_URL}/todos`,{
+            const response = await fetch(`${API_URL}/transactions`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                     Authorization: `Bearer ${auth.getAccessToken()}`,
                 },
                 body: JSON.stringify({
-                    title,
+                    type,
+                    amount,
+                    description,
                 }),
             });
 
-            if ( response.ok){
+            if (response.ok) {
                 const json = await response.json();
-                setTodos([ json,...todos]);
-            }else{
-                //mostrar error de conexion
+                setTransactions([json, ...transactions]);
+            } else {
+                console.error("Error al crear la transacción:", await response.text());
             }
         } catch (error) {
-            
+            console.error("Error al crear la transacción:", error);
         }
     }
 
-    async function loadTodos() {
+    async function updateTransaction(id: string) {
         try {
-            const response = await fetch(`${API_URL}/todos`, {
+            const response = await fetch(`${API_URL}/transactions/${id}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: `Bearer ${auth.getAccessToken()}`,
+                },
+                body: JSON.stringify({
+                    type,
+                    amount,
+                    description,
+                }),
+            });
+
+            if (response.ok) {
+                await loadTransactions();
+                clearForm(); // Limpiar el formulario después de una actualización exitosa
+            } else {
+                console.error("Error al actualizar la transacción:", await response.text());
+            }
+        } catch (error) {
+            console.error("Error al actualizar la transacción:", error);
+        }
+    }
+
+    async function deleteTransaction(id: string) {
+        try {
+            const response = await fetch(`${API_URL}/transactions/${id}`, {
+                method: 'DELETE',
+                headers: {
+                    Authorization: `Bearer ${auth.getAccessToken()}`,
+                },
+            });
+
+            if (response.ok) {
+                await loadTransactions();
+            } else {
+                console.error("Error al eliminar la transacción:", await response.text());
+            }
+        } catch (error) {
+            console.error("Error al eliminar la transacción:", error);
+        }
+    }
+
+    async function loadTransactions() {
+        try {
+            const response = await fetch(`${API_URL}/transactions`, {
                 headers: {
                     'Content-Type': 'application/json',
                     Authorization: `Bearer ${auth.getAccessToken()}`,
@@ -58,27 +116,89 @@ export default function Dashboard() {
 
             if (response.ok) {
                 const json = await response.json();
-                setTodos(json);
+                setTransactions(json);
             } else {
-                // Mostrar error en la UI o manejarlo de alguna manera
+                console.error("Error al cargar las transacciones:", await response.text());
             }
         } catch (error) {
-            // Manejar la excepción adecuadamente, por ejemplo:
-            console.error("Error al cargar los todos:", error);
+            console.error("Error al cargar las transacciones:", error);
         }
     }
 
+    function handleEdit(id: string) {
+        const transactionToEdit = transactions.find(transaction => transaction.id === id);
+        if (transactionToEdit) {
+            setEditTransactionId(transactionToEdit.id);
+            setType(transactionToEdit.type);
+            setAmount(transactionToEdit.amount);
+            setDescription(transactionToEdit.description);
+        }
+    }
+
+    function handleDelete(id: string) {
+        if (window.confirm("¿Estás seguro de que deseas eliminar esta transacción?")) {
+            deleteTransaction(id);
+        }
+    }
+
+    function clearForm() {
+        setEditTransactionId(null);
+        setType('income');
+        setAmount(0);
+        setDescription('');
+    }
+
     return (
-        <div>
-            <h1>Dashboard de {auth.getUser()?.name || ''}</h1>
-            <form onSubmit={handleSubmit}>
-            <div className="contenedor-input">
-                <input type="text" placeholder="Nuevo todo..." onChange={(e) => setTitle(e.target.value)} value={title}/>
+        <DefaultLayout>
+            <div className="form">
+                <h1 className="title">Dashboard de {auth.getUser()?.name || ''}</h1>
+                <form  onSubmit={handleSubmit}>
+                    <div className="input-group">
+                        <select className="input" onChange={(e) => setType(e.target.value)} value={type}>
+                            <option value="income">Ingreso</option>
+                            <option value="expense">Gasto</option>
+                        </select>
+                        <input 
+                            className="input" 
+                            type="number" 
+                            placeholder="Monto" 
+                            onChange={(e) => setAmount(parseFloat(e.target.value))} 
+                            value={amount} 
+                            min="0"
+                        />
+                        <input 
+                            className="input" 
+                            type="text" 
+                            placeholder="Descripción" 
+                            onChange={(e) => setDescription(e.target.value)} 
+                            value={description} 
+                        />
+                    </div>
+                    <button className="button" type="submit">{editTransactionId ? 'Actualizar' : 'Agregar'}</button>
+                    {editTransactionId && (
+                        <button className="button cancel" type="button" onClick={() => clearForm()}>Cancelar</button>
+                    )}
+                </form>
+                <div className="summary">
+                    <h2>Ingresos: {transactions.filter(transaction => transaction.type === 'income').reduce((sum, transaction) => sum + transaction.amount, 0)}</h2>
+                    <h2>Gastos: {transactions.filter(transaction => transaction.type === 'expense').reduce((sum, transaction) => sum + transaction.amount, 0)}</h2>
+                    <h2 className={transactions.filter(transaction => transaction.type === 'income').reduce((sum, transaction) => sum + transaction.amount, 0) - transactions.filter(transaction => transaction.type === 'expense').reduce((sum, transaction) => sum + transaction.amount, 0) < 0 ? 'negative-balance' : 'positive-balance'}>
+                        Balance: {transactions.filter(transaction => transaction.type === 'income').reduce((sum, transaction) => sum + transaction.amount, 0) - transactions.filter(transaction => transaction.type === 'expense').reduce((sum, transaction) => sum + transaction.amount, 0)}
+                    </h2>
+                </div>
+                <div className="from">
+                    {transactions.map((transaction) => (
+                        <div className="from" key={transaction.id}>
+                            <span>{transaction.type === 'income' ? 'Ingreso' : 'Gasto'}: {transaction.amount}</span>
+                            <span> - {transaction.description}</span>
+                            <div>
+                                <button className="edit-button" onClick={() => handleEdit(transaction.id)}>Editar</button>
+                                <button className="delete-button" onClick={() => handleDelete(transaction.id)}>Eliminar</button>
+                            </div>
+                        </div>
+                    ))}
+                </div>
             </div>
-            </form>
-            {todos.map((todo) => (
-                <div key={todo.id}>{todo.title}</div>
-            ))}
-        </div>
+        </DefaultLayout>
     );
 }

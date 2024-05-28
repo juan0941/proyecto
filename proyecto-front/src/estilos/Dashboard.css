@@ -1,0 +1,65 @@
+
+.title {
+    text-align: center;
+    color: #333;
+}
+
+.form {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 20px;
+}
+
+.input-group {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.input {
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-size: 16px;
+}
+
+
+
+.summary {
+    margin-bottom: 20px;
+}
+
+.summary h2 {
+    margin: 0;
+    padding: 5px 0;
+}
+
+.positive-balance {
+    color: green;
+}
+
+.negative-balance {
+    color: red;
+}
+
+.transactions {
+    margin-top: 20px;
+}
+
+.transactions h2 {
+    margin-bottom: 10px;
+}
+
+.transaction {
+    background-color: white;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    margin-bottom: 10px;
+}
+
+.transaction span {
+    display: block;
+    font-size: 16px;
+}
