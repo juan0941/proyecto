@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useAuth } from "../auth/AuthProvider";
 import { API_URL } from "../auth/constants";
 import '../estilos/Dashboard.css';
-import DefaultLayout from "../layout/DefaultLayout"
+import LayoutSingout from "../layout/layoutSingout"
 
 interface Transaction {
     id: string;
@@ -149,9 +149,9 @@ export default function Dashboard() {
     }
 
     return (
-        <DefaultLayout>
+        <LayoutSingout>
             <div className="form">
-                <h1 className="title">Dashboard de {auth.getUser()?.name || ''}</h1>
+                <h1 className="title">Ingrosos y gastos de {auth.getUser()?.name || ''}</h1>
                 <form  onSubmit={handleSubmit}>
                     <div className="input-group">
                         <select className="input" onChange={(e) => setType(e.target.value)} value={type}>
@@ -199,6 +199,6 @@ export default function Dashboard() {
                     ))}
                 </div>
             </div>
-        </DefaultLayout>
+        </LayoutSingout>
     );
 }
